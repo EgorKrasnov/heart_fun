@@ -12,7 +12,7 @@
 		<key>HeartActivityExtension.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>2</integer>
+			<integer>0</integer>
 		</dict>
 		<key>heart_fun.xcscheme_^#shared#^_</key>
 		<dict>
@@ -23,6 +23,19 @@
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>7407DCD02E7B462C00B17AA4</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>74972EF02E7CAD7C0094FB77</key>
+		<dict>
+			<key>primary</key>
+			<true/>
 		</dict>
 	</dict>
 </dict>
