@@ -41,16 +41,39 @@ struct SimpleEntry: TimelineEntry {
     let configuration: ConfigurationAppIntent
 }
 
-struct heart_fun_widgetEntryView : View {
+struct heart_fun_widgetEntryView: View {
+    @Environment(\.widgetFamily) private var family
+
     var entry: Provider.Entry
 
+    @ViewBuilder
     var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
+        switch family {
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                Text(entry.configuration.favoriteEmoji)
+                    .font(.title)
+            }
+        case .accessoryInline:
+            Text("❤️ \(entry.configuration.favoriteEmoji)")
+        case .accessoryRectangular:
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Heart Fun")
+                    .font(.headline)
+                Text(entry.date, style: .time)
+                    .font(.caption)
+                Text("Emoji: \(entry.configuration.favoriteEmoji)")
+                    .font(.caption2)
+            }
+        default:
+            VStack {
+                Text("Time:")
+                Text(entry.date, style: .time)
 
-            Text("Favorite Emoji:")
-            Text(entry.configuration.favoriteEmoji)
+                Text("Favorite Emoji:")
+                Text(entry.configuration.favoriteEmoji)
+            }
         }
     }
 }
@@ -63,6 +86,7 @@ struct heart_fun_widget: Widget {
             heart_fun_widgetEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
+        .supportedFamilies([.systemSmall, .accessoryCircular, .accessoryInline, .accessoryRectangular])
     }
 }
 
