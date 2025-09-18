@@ -2,6 +2,8 @@ import SwiftUI
 import Combine
 import CoreBluetooth
 import Charts   // iOS 16+
+import ActivityKit
+
 
 // ViewModel для работы с пульсометром
 class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
@@ -79,6 +81,8 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         if characteristic.uuid == heartRateMeasurementCharacteristicCBUUID,
            let data = characteristic.value {
             parseHeartRateData(data)
+            startLiveActivityIfNeeded()
+            updateLiveActivity()
         }
     }
     
@@ -115,6 +119,7 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 self.heartRateHistory.removeFirst()
             }
         }
+    
     }
     
     // MARK: - Экспорт истории в CSV
@@ -138,6 +143,60 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
 }
+
+extension HeartRateViewModel {
+    private static var startedLive = false
+    private static var liveActivity: Activity<HeartActivityAttributes>?
+
+    func startLiveActivityIfNeeded() {
+        guard !Self.startedLive else { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+
+        let initial = HeartActivityAttributes.ContentState(heartRate: heartRate)
+        let attrs   = HeartActivityAttributes(deviceName: deviceName ?? "Пульсометр")
+
+        do {
+            if #available(iOS 17.0, *) {
+                let content = ActivityContent(state: initial, staleDate: nil)
+                Self.liveActivity = try Activity.request(attributes: attrs, content: content)
+            } else {
+                // iOS 16.1/16.2
+                Self.liveActivity = try Activity.request(attributes: attrs, contentState: initial)
+            }
+            Self.startedLive = true
+        } catch {
+            print("Не удалось запустить Live Activity: \(error)")
+        }
+    }
+
+    func updateLiveActivity() {
+        let state = HeartActivityAttributes.ContentState(heartRate: heartRate)
+        Task {
+            if let act = Self.liveActivity {
+                if #available(iOS 17.0, *) {
+                    await act.update(ActivityContent(state: state, staleDate: nil))
+                } else {
+                    await act.update(using: state) // для iOS 16.x
+                }
+            }
+        }
+    }
+
+    func stopLiveActivity() {
+        Task {
+            if let act = Self.liveActivity {
+                if #available(iOS 17.0, *) {
+                    await act.end(nil, dismissalPolicy: .immediate)
+                } else {
+                    await act.end(using: nil, dismissalPolicy: .immediate)
+                }
+                Self.liveActivity = nil
+                Self.startedLive = false
+            }
+        }
+    }
+}
+
 
 // MARK: - SwiftUI экран
 struct ContentView: View {

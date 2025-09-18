@@ -6,14 +6,75 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		74972EF22E7CAD7C0094FB77 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74972ED12E7CAB910094FB77 /* WidgetKit.framework */; };
+		74972EF32E7CAD7C0094FB77 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74972ED32E7CAB910094FB77 /* SwiftUI.framework */; };
+		74972F042E7CAD7D0094FB77 /* HeartActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74972EF12E7CAD7C0094FB77 /* HeartActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		74972F022E7CAD7D0094FB77 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7407DCC92E7B462C00B17AA4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 74972EF02E7CAD7C0094FB77;
+			remoteInfo = HeartActivityExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		74972EEA2E7CAB920094FB77 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				74972F042E7CAD7D0094FB77 /* HeartActivityExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		7407DCD12E7B462C00B17AA4 /* heart_fun.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = heart_fun.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		74972ED12E7CAB910094FB77 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		74972ED32E7CAB910094FB77 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		74972EF12E7CAD7C0094FB77 /* HeartActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HeartActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		74972F052E7CAD7D0094FB77 /* Exceptions for "HeartActivity" folder in "HeartActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 74972EF02E7CAD7C0094FB77 /* HeartActivityExtension */;
+		};
+		74972F0C2E7CAED80094FB77 /* Exceptions for "heart_fun" folder in "HeartActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				HeartActivityAttributes.swift,
+			);
+			target = 74972EF02E7CAD7C0094FB77 /* HeartActivityExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7407DCD32E7B462C00B17AA4 /* heart_fun */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				74972F0C2E7CAED80094FB77 /* Exceptions for "heart_fun" folder in "HeartActivityExtension" target */,
+			);
 			path = heart_fun;
+			sourceTree = "<group>";
+		};
+		74972EF42E7CAD7C0094FB77 /* HeartActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				74972F052E7CAD7D0094FB77 /* Exceptions for "HeartActivity" folder in "HeartActivityExtension" target */,
+			);
+			path = HeartActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,6 +87,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		74972EEE2E7CAD7C0094FB77 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				74972EF32E7CAD7C0094FB77 /* SwiftUI.framework in Frameworks */,
+				74972EF22E7CAD7C0094FB77 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -33,6 +103,8 @@
 			isa = PBXGroup;
 			children = (
 				7407DCD32E7B462C00B17AA4 /* heart_fun */,
+				74972EF42E7CAD7C0094FB77 /* HeartActivity */,
+				74972ED02E7CAB910094FB77 /* Frameworks */,
 				7407DCD22E7B462C00B17AA4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +113,18 @@
 			isa = PBXGroup;
 			children = (
 				7407DCD12E7B462C00B17AA4 /* heart_fun.app */,
+				74972EF12E7CAD7C0094FB77 /* HeartActivityExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		74972ED02E7CAB910094FB77 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				74972ED12E7CAB910094FB77 /* WidgetKit.framework */,
+				74972ED32E7CAB910094FB77 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,10 +137,12 @@
 				7407DCCD2E7B462C00B17AA4 /* Sources */,
 				7407DCCE2E7B462C00B17AA4 /* Frameworks */,
 				7407DCCF2E7B462C00B17AA4 /* Resources */,
+				74972EEA2E7CAB920094FB77 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				74972F032E7CAD7D0094FB77 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7407DCD32E7B462C00B17AA4 /* heart_fun */,
@@ -69,6 +153,28 @@
 			productName = heart_fun;
 			productReference = 7407DCD12E7B462C00B17AA4 /* heart_fun.app */;
 			productType = "com.apple.product-type.application";
+		};
+		74972EF02E7CAD7C0094FB77 /* HeartActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 74972F062E7CAD7D0094FB77 /* Build configuration list for PBXNativeTarget "HeartActivityExtension" */;
+			buildPhases = (
+				74972EED2E7CAD7C0094FB77 /* Sources */,
+				74972EEE2E7CAD7C0094FB77 /* Frameworks */,
+				74972EEF2E7CAD7C0094FB77 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				74972EF42E7CAD7C0094FB77 /* HeartActivity */,
+			);
+			name = HeartActivityExtension;
+			packageProductDependencies = (
+			);
+			productName = HeartActivityExtension;
+			productReference = 74972EF12E7CAD7C0094FB77 /* HeartActivityExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +187,9 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					7407DCD02E7B462C00B17AA4 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					74972EF02E7CAD7C0094FB77 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -100,12 +209,20 @@
 			projectRoot = "";
 			targets = (
 				7407DCD02E7B462C00B17AA4 /* heart_fun */,
+				74972EF02E7CAD7C0094FB77 /* HeartActivityExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		7407DCCF2E7B462C00B17AA4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		74972EEF2E7CAD7C0094FB77 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +239,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		74972EED2E7CAD7C0094FB77 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		74972F032E7CAD7D0094FB77 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 74972EF02E7CAD7C0094FB77 /* HeartActivityExtension */;
+			targetProxy = 74972F022E7CAD7D0094FB77 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7407DCDA2E7B462D00B17AA4 /* Debug */ = {
@@ -256,6 +388,7 @@
 				DEVELOPMENT_TEAM = C8353T2WS5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "heart-fun-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Приложению нужен доступ к Bluetooth для чтения пульса";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Доступ к Bluetooth для работы с нагрудным датчиком";
@@ -292,6 +425,7 @@
 				DEVELOPMENT_TEAM = C8353T2WS5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "heart-fun-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Приложению нужен доступ к Bluetooth для чтения пульса";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Доступ к Bluetooth для работы с нагрудным датчиком";
@@ -318,6 +452,68 @@
 			};
 			name = Release;
 		};
+		74972F072E7CAD7D0094FB77 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C8353T2WS5;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HeartActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HeartActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ipek.heart-fun.HeartActivity";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		74972F082E7CAD7D0094FB77 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C8353T2WS5;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HeartActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HeartActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ipek.heart-fun.HeartActivity";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -335,6 +531,15 @@
 			buildConfigurations = (
 				7407DCDD2E7B462D00B17AA4 /* Debug */,
 				7407DCDE2E7B462D00B17AA4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		74972F062E7CAD7D0094FB77 /* Build configuration list for PBXNativeTarget "HeartActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				74972F072E7CAD7D0094FB77 /* Debug */,
+				74972F082E7CAD7D0094FB77 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
