@@ -4,13 +4,14 @@ import CoreBluetooth
 import Charts   // iOS 16+
 import ActivityKit
 
-// ViewModel для работы с пульсометром
+// --- ViewModel ---
 class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     @Published var heartRate: Int = 0
     @Published var connectionStatus: String = "🔍 Поиск..."
     @Published var deviceName: String? = nil
     @Published var heartRateHistory: [(time: Date, bpm: Int, rr: [Double])] = []
-    
+    @Published var discoveredDevices: [CBPeripheral] = []   // 👈 список найденных
+
     private var centralManager: CBCentralManager!
     private var heartRatePeripheral: CBPeripheral?
     
@@ -22,16 +23,13 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     override init() {
         super.init()
-        print("🔥 HeartRateViewModel init")
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
     // MARK: - Bluetooth lifecycle
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        print("📡 centralManagerDidUpdateState: \(central.state.rawValue)")
         if central.state == .poweredOn {
             connectionStatus = "🔍 Поиск устройств..."
-            print("🔍 Начинаем сканирование по сервису \(heartRateServiceCBUUID)")
             centralManager.scanForPeripherals(withServices: [heartRateServiceCBUUID], options: nil)
         } else {
             connectionStatus = "❌ Bluetooth выключен"
@@ -42,7 +40,14 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                         didDiscover peripheral: CBPeripheral,
                         advertisementData: [String : Any],
                         rssi RSSI: NSNumber) {
-        print("✅ Найдено устройство: \(peripheral.name ?? "Без имени"), RSSI: \(RSSI)")
+        // Добавляем в список, если ещё нет
+        if !discoveredDevices.contains(where: { $0.identifier == peripheral.identifier }) {
+            discoveredDevices.append(peripheral)
+        }
+    }
+
+    /// Подключение к выбранному устройству
+    func connectTo(_ peripheral: CBPeripheral) {
         heartRatePeripheral = peripheral
         heartRatePeripheral?.delegate = self
         deviceName = peripheral.name ?? "Неизвестное устройство"
@@ -52,13 +57,11 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        print("🔗 Подключено к \(peripheral.name ?? "Unknown")")
         connectionStatus = "✅ Подключено"
         peripheral.discoverServices([heartRateServiceCBUUID])
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        print("⚠️ Отключено от \(peripheral.name ?? "Unknown"), error: \(String(describing: error))")
         connectionStatus = "⚠️ Отключено"
         deviceName = nil
         heartRatePeripheral = nil
@@ -66,11 +69,7 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        if let error = error {
-            print("❌ Ошибка discoverServices: \(error)")
-        }
         guard let services = peripheral.services else { return }
-        print("📑 Найдены сервисы: \(services.map{$0.uuid})")
         for service in services {
             peripheral.discoverCharacteristics([heartRateMeasurementCharacteristicCBUUID], for: service)
         }
@@ -79,14 +78,9 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     func peripheral(_ peripheral: CBPeripheral,
                     didDiscoverCharacteristicsFor service: CBService,
                     error: Error?) {
-        if let error = error {
-            print("❌ Ошибка discoverCharacteristics: \(error)")
-        }
         guard let characteristics = service.characteristics else { return }
-        print("🔎 Характеристики сервиса \(service.uuid): \(characteristics.map{$0.uuid})")
         for characteristic in characteristics {
             if characteristic.uuid == heartRateMeasurementCharacteristicCBUUID {
-                print("📥 Подписываемся на HR characteristic \(characteristic.uuid)")
                 peripheral.setNotifyValue(true, for: characteristic)
             }
         }
@@ -95,19 +89,16 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     func peripheral(_ peripheral: CBPeripheral,
                     didUpdateValueFor characteristic: CBCharacteristic,
                     error: Error?) {
-        if let error = error {
-            print("❌ Ошибка didUpdateValueFor: \(error)")
-        }
         if characteristic.uuid == heartRateMeasurementCharacteristicCBUUID,
            let data = characteristic.value {
-            print("📩 Получены данные HR: \(data as NSData)")
             parseHeartRateData(data)
             startLiveActivityIfNeeded()
             updateLiveActivity()
         }
     }
     
-    // MARK: - Парсинг HR + RR интервалов
+    
+    // MARK: - Парсинг HR
     private func parseHeartRateData(_ data: Data) {
         let reportData = [UInt8](data)
         let flag = reportData[0]
@@ -139,11 +130,15 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             if self.heartRateHistory.count > 500 {
                 self.heartRateHistory.removeFirst()
             }
-            print("❤️ BPM = \(bpm), RR = \(rrIntervals)")
         }
     }
     
-    // MARK: - Экспорт истории в CSV
+    // MARK: - Сброс истории
+    func clearHistory() {
+        heartRateHistory.removeAll()
+    }
+    
+    // MARK: - Экспорт истории
     func exportCSV() -> URL? {
         var csv = "timestamp,heart_rate,rr_intervals_ms\n"
         let formatter = ISO8601DateFormatter()
@@ -157,21 +152,16 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         do {
             let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent("heart_rate_history.csv")
             try csv.write(to: fileURL, atomically: true, encoding: .utf8)
-            print("💾 История сохранена в \(fileURL)")
             return fileURL
         } catch {
-            print("❌ Ошибка сохранения CSV: \(error)")
             return nil
         }
     }
     
-    // MARK: - Live Activity
+    // MARK: - Live Activity (оставлено для фоновой работы, но без кнопок)
     func startLiveActivityIfNeeded() {
         guard !Self.startedLive else { return }
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            print("⚠️ Live Activities отключены пользователем")
-            return
-        }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
         let initial = HeartActivityAttributes.ContentState(heartRate: heartRate)
         let attrs   = HeartActivityAttributes(deviceName: deviceName ?? "Пульсометр")
@@ -184,10 +174,7 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 Self.liveActivity = try Activity.request(attributes: attrs, contentState: initial)
             }
             Self.startedLive = true
-            print("✅ Live Activity запущена")
-        } catch {
-            print("❌ Не удалось запустить Live Activity: \(error)")
-        }
+        } catch {}
     }
 
     func updateLiveActivity() {
@@ -199,43 +186,27 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                 } else {
                     await act.update(using: state)
                 }
-                print("🔄 Live Activity обновлена: \(heartRate) bpm")
-            }
-        }
-    }
-
-    func stopLiveActivity() {
-        Task {
-            if let act = Self.liveActivity {
-                if #available(iOS 17.0, *) {
-                    await act.end(nil, dismissalPolicy: .immediate)
-                } else {
-                    await act.end(using: nil, dismissalPolicy: .immediate)
-                }
-                Self.liveActivity = nil
-                Self.startedLive = false
-                print("🛑 Live Activity остановлена")
             }
         }
     }
 }
 
 
-// MARK: - UIKit-обертка для Share Sheet
+// --- Share Sheet ---
 struct ActivityView: UIViewControllerRepresentable {
     let activityItems: [Any]
-    let applicationActivities: [UIActivity]? = nil
-    
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
     }
-    
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
-// MARK: - SwiftUI экран
+
+// --- SwiftUI View ---
 struct ContentView: View {
     @StateObject private var viewModel = HeartRateViewModel()
+    
+    @State private var selectedDeviceID: UUID? = nil
     @State private var showShareSheet = false
     @State private var exportURL: URL?
     
@@ -249,24 +220,68 @@ struct ContentView: View {
                 .font(.headline)
                 .foregroundColor(.blue)
             
-            if let name = viewModel.deviceName {
-                Text("Устройство: \(name)")
-                    .font(.subheadline)
+            if !viewModel.discoveredDevices.isEmpty {
+                Picker("Выберите устройство", selection: $selectedDeviceID) {
+                    // (необязательно) плейсхолдер — на случай если не успели автоназначить
+                    Text("Выберите устройство…").tag(nil as UUID?)
+
+                    ForEach(viewModel.discoveredDevices, id: \.identifier) { device in
+                        Text(device.name ?? device.identifier.uuidString)
+                            .tag(device.identifier as UUID?)
+                    }
+                }
+                .pickerStyle(.menu)
+                // когда список обновился — выбрать первое, если ещё ничего не выбрано,
+                // и «починить» выбор, если текущее устройство пропало
+                .onChange(of: viewModel.discoveredDevices) { list in
+                    if selectedDeviceID == nil, let first = list.first {
+                        selectedDeviceID = first.identifier
+                    } else if let id = selectedDeviceID,
+                              !list.contains(where: { $0.identifier == id }) {
+                        selectedDeviceID = list.first?.identifier
+                    }
+                }
+                // при первом появлении Picker тоже выставим выбор
+                .onAppear {
+                    if selectedDeviceID == nil, let first = viewModel.discoveredDevices.first {
+                        selectedDeviceID = first.identifier
+                    }
+                }
+
+                Button("🔗 Подключиться") {
+                    guard let id = selectedDeviceID,
+                          let device = viewModel.discoveredDevices.first(where: { $0.identifier == id }) else { return }
+                    viewModel.connectTo(device)
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                Text("Поиск устройств...")
+                    .font(.footnote)
+                    .foregroundColor(.gray)
             }
-            
-            Text("\(viewModel.heartRate) bpm")
-                .font(.system(size: 48, weight: .bold, design: .rounded))
-                .foregroundColor(.red)
-                .padding()
+             
+             // --- остальная часть интерфейса ---
+             Text("\(viewModel.heartRate) bpm")
+                 .font(.system(size: 48, weight: .bold, design: .rounded))
+                 .foregroundColor(.red)
+                 .padding()
             
             if #available(iOS 16.0, *) {
                 Chart {
-                    ForEach(Array(viewModel.heartRateHistory.enumerated()), id: \.offset) { index, entry in
+                    ForEach(viewModel.heartRateHistory, id: \.time) { entry in
                         LineMark(
-                            x: .value("Time", index),
+                            x: .value("Time", entry.time),
                             y: .value("HR", entry.bpm)
                         )
                         .foregroundStyle(.red)
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                        if let date = value.as(Date.self) {
+                            AxisGridLine()
+                            AxisValueLabel(format: .dateTime.second().minute())
+                        }
                     }
                 }
                 .frame(height: 200)
@@ -277,24 +292,18 @@ struct ContentView: View {
                     .foregroundColor(.gray)
             }
             
-            // Экспорт в CSV
-            Button("📤 Экспортировать в CSV") {
-                if let url = viewModel.exportCSV() {
-                    exportURL = url
-                    showShareSheet = true
-                }
-            }
-            .padding()
-            
-            // Тестовые кнопки Live Activity
+            // Кнопки действий
             HStack {
-                Button("🚀 Старт Live Activity") {
-                    viewModel.startLiveActivityIfNeeded()
+                Button("📤 Экспортировать в CSV") {
+                    if let url = viewModel.exportCSV() {
+                        exportURL = url
+                        showShareSheet = true
+                    }
                 }
                 .buttonStyle(.borderedProminent)
                 
-                Button("🛑 Стоп") {
-                    viewModel.stopLiveActivity()
+                Button("🗑 Обнулить график") {
+                    viewModel.clearHistory()
                 }
                 .buttonStyle(.bordered)
             }
