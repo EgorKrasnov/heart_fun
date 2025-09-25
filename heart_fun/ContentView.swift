@@ -127,7 +127,7 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             let now = Date()
             self.heartRate = Int(bpm)
             self.heartRateHistory.append((time: now, bpm: Int(bpm), rr: rrIntervals))
-            if self.heartRateHistory.count > 500 {
+            if self.heartRateHistory.count > 10000 {
                 self.heartRateHistory.removeFirst()
             }
         }
@@ -209,6 +209,8 @@ struct ContentView: View {
     @State private var selectedDeviceID: UUID? = nil
     @State private var showShareSheet = false
     @State private var exportURL: URL?
+    @State private var selectedEntry: (time: Date, bpm: Int)? = nil   // 👈 подсвеченная точка
+
     
     var body: some View {
         VStack(spacing: 20) {
@@ -275,6 +277,26 @@ struct ContentView: View {
                         )
                         .foregroundStyle(.red)
                     }
+                    
+                    // 👇 Подсветка выбранной точки
+                    if let entry = selectedEntry {
+                        RuleMark(x: .value("Time", entry.time))
+                            .foregroundStyle(.blue)
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [5]))
+                        
+                        PointMark(
+                            x: .value("Time", entry.time),
+                            y: .value("HR", entry.bpm)
+                        )
+                        .foregroundStyle(.blue)
+                        .annotation(position: .top, alignment: .center) {
+                            Text("\(entry.bpm) bpm")
+                                .font(.caption)
+                                .padding(4)
+                                .background(Color.white.opacity(0.8))
+                                .cornerRadius(5)
+                        }
+                    }
                 }
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 5)) { value in
@@ -286,6 +308,28 @@ struct ContentView: View {
                 }
                 .frame(height: 200)
                 .padding()
+                // 👇 overlay для жеста
+                .chartOverlay { proxy in
+                    GeometryReader { geo in
+                        Rectangle().fill(Color.clear).contentShape(Rectangle())
+                            .gesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        if let date: Date = proxy.value(atX: value.location.x) {
+                                            if let nearest = viewModel.heartRateHistory.min(by: {
+                                                abs($0.time.timeIntervalSince(date)) <
+                                                abs($1.time.timeIntervalSince(date))
+                                            }) {
+                                                selectedEntry = (nearest.time, nearest.bpm)
+                                            }
+                                        }
+                                    }
+                                    .onEnded { _ in
+                                        selectedEntry = nil
+                                    }
+                            )
+                    }
+                }
             } else {
                 Text("График доступен только на iOS 16+")
                     .font(.footnote)
