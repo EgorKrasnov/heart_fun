@@ -158,6 +158,42 @@ class HeartRateViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         }
     }
     
+    func calculateZonePercents(green: Int, yellow: Int, red: Int) -> (green: Double, yellow: Double, red: Double) {
+        guard heartRateHistory.count > 1 else { return (0, 0, 0) }
+        
+        var greenTime: TimeInterval = 0
+        var yellowTime: TimeInterval = 0
+        var redTime: TimeInterval = 0
+        
+        for i in 1..<heartRateHistory.count {
+            let prev = heartRateHistory[i-1]
+            let curr = heartRateHistory[i]
+            
+            // интервал времени между точками
+            let dt = curr.time.timeIntervalSince(prev.time)
+            let bpm = prev.bpm
+            
+            if bpm < green {
+                // ниже зелёной зоны не считаем (можно добавить как "синюю" зону при желании)
+                continue
+            } else if bpm < yellow {
+                greenTime += dt
+            } else if bpm < red {
+                yellowTime += dt
+            } else {
+                redTime += dt
+            }
+        }
+        
+        let total = greenTime + yellowTime + redTime
+        guard total > 0 else { return (0, 0, 0) }
+        
+        return (greenTime/total * 100,
+                yellowTime/total * 100,
+                redTime/total * 100)
+    }
+
+    
     // MARK: - Live Activity (оставлено для фоновой работы, но без кнопок)
     func startLiveActivityIfNeeded() {
         guard !Self.startedLive else { return }
@@ -210,58 +246,133 @@ struct ContentView: View {
     @State private var showShareSheet = false
     @State private var exportURL: URL?
     @State private var selectedEntry: (time: Date, bpm: Int)? = nil   // 👈 подсвеченная точка
-
+    
+    @State private var greenZone: Int = 100
+    @State private var yellowZone: Int = 150
+    @State private var redZone: Int = 180
+    @State private var zoneError: String? = nil
     
     var body: some View {
         VStack(spacing: 20) {
-            Text("❤️ Heart Rate Monitor")
-                .font(.title2)
-                .padding(.top)
-            
-            Text(viewModel.connectionStatus)
-                .font(.headline)
-                .foregroundColor(.blue)
-            
-            if !viewModel.discoveredDevices.isEmpty {
-                Picker("Выберите устройство", selection: $selectedDeviceID) {
-                    // (необязательно) плейсхолдер — на случай если не успели автоназначить
-                    Text("Выберите устройство…").tag(nil as UUID?)
+            HStack {
+                // статус
+                Text(viewModel.connectionStatus)
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
-                    ForEach(viewModel.discoveredDevices, id: \.identifier) { device in
-                        Text(device.name ?? device.identifier.uuidString)
-                            .tag(device.identifier as UUID?)
-                    }
-                }
-                .pickerStyle(.menu)
-                // когда список обновился — выбрать первое, если ещё ничего не выбрано,
-                // и «починить» выбор, если текущее устройство пропало
-                .onChange(of: viewModel.discoveredDevices) { list in
-                    if selectedDeviceID == nil, let first = list.first {
-                        selectedDeviceID = first.identifier
-                    } else if let id = selectedDeviceID,
-                              !list.contains(where: { $0.identifier == id }) {
-                        selectedDeviceID = list.first?.identifier
-                    }
-                }
-                // при первом появлении Picker тоже выставим выбор
-                .onAppear {
-                    if selectedDeviceID == nil, let first = viewModel.discoveredDevices.first {
-                        selectedDeviceID = first.identifier
-                    }
-                }
+                Spacer()
 
-                Button("🔗 Подключиться") {
-                    guard let id = selectedDeviceID,
-                          let device = viewModel.discoveredDevices.first(where: { $0.identifier == id }) else { return }
-                    viewModel.connectTo(device)
+                // выбор устройства
+                if !viewModel.discoveredDevices.isEmpty {
+                    Picker("Устройство", selection: $selectedDeviceID) {
+                        ForEach(viewModel.discoveredDevices, id: \.identifier) { device in
+                            Text(device.name ?? device.identifier.uuidString)
+                                .tag(Optional(device.identifier))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .onChange(of: viewModel.discoveredDevices) { list in
+                        // если ничего не выбрано – выбрать первое
+                        if selectedDeviceID == nil, let first = list.first {
+                            selectedDeviceID = first.identifier
+                        }
+                        // если выбранное устройство исчезло – выбрать новое первое
+                        else if let id = selectedDeviceID,
+                                !list.contains(where: { $0.identifier == id }),
+                                let first = list.first {
+                            selectedDeviceID = first.identifier
+                        }
+                    }
+                    .onAppear {
+                        if selectedDeviceID == nil, let first = viewModel.discoveredDevices.first {
+                            selectedDeviceID = first.identifier
+                        }
+                    }
+
+                    Button("🔗 Pair") {
+                        guard let id = selectedDeviceID,
+                              let device = viewModel.discoveredDevices.first(where: { $0.identifier == id }) else { return }
+                        viewModel.connectTo(device)
+                    }
+                    .buttonStyle(.borderedProminent)
+                } else {
+                    Text("Поиск устройств…")
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Кнопки действий
+            HStack {
+                Button("📤  Share") {
+                    if let url = viewModel.exportCSV() {
+                        exportURL = url
+                        showShareSheet = true
+                    }
                 }
                 .buttonStyle(.borderedProminent)
-            } else {
-                Text("Поиск устройств...")
-                    .font(.footnote)
-                    .foregroundColor(.gray)
+                
+                Button("🗑 Clear") {
+                    viewModel.clearHistory()
+                }
+                .buttonStyle(.bordered)
             }
-             
+//            .padding(.top, 10)
+            
+            VStack {
+                HStack {
+                    VStack {
+                        Text("Зелёная")
+                        Picker("Зелёная", selection: $greenZone) {
+                            ForEach(60..<200) { bpm in
+                                Text("\(bpm)").tag(bpm)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(height: 80)
+                    }
+                    
+                    VStack {
+                        Text("Жёлтая")
+                        Picker("Жёлтая", selection: $yellowZone) {
+                            ForEach(60..<200) { bpm in
+                                Text("\(bpm)").tag(bpm)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(height: 80)
+                    }
+                    
+                    VStack {
+                        Text("Красная")
+                        Picker("Красная", selection: $redZone) {
+                            ForEach(60..<220) { bpm in
+                                Text("\(bpm)").tag(bpm)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(height: 80)
+                    }
+                }
+                
+                if let error = zoneError {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.footnote)
+                }
+            }
+            .onChange(of: [greenZone, yellowZone, redZone]) { _ in
+                if !(greenZone < yellowZone && yellowZone < redZone) {
+                    zoneError = "Значения должны быть по возрастанию"
+                } else {
+                    zoneError = nil
+                }
+            }
+            
+            
              // --- остальная часть интерфейса ---
              Text("\(viewModel.heartRate) bpm")
                  .font(.system(size: 48, weight: .bold, design: .rounded))
@@ -276,6 +387,33 @@ struct ContentView: View {
                             y: .value("HR", entry.bpm)
                         )
                         .foregroundStyle(.red)
+                    }
+                    
+                    // подсветка зоны — если порядок корректный
+                    if zoneError == nil {
+                        RectangleMark(
+                            xStart: .value("Start", viewModel.heartRateHistory.first?.time ?? Date()),
+                            xEnd: .value("End", viewModel.heartRateHistory.last?.time ?? Date()),
+                            yStart: .value("Low", greenZone),
+                            yEnd: .value("High", yellowZone)
+                        )
+                        .foregroundStyle(Color.green.opacity(0.2))
+                        
+                        RectangleMark(
+                            xStart: .value("Start", viewModel.heartRateHistory.first?.time ?? Date()),
+                            xEnd: .value("End", viewModel.heartRateHistory.last?.time ?? Date()),
+                            yStart: .value("Low", yellowZone),
+                            yEnd: .value("High", redZone)
+                        )
+                        .foregroundStyle(Color.yellow.opacity(0.2))
+                        
+                        RectangleMark(
+                            xStart: .value("Start", viewModel.heartRateHistory.first?.time ?? Date()),
+                            xEnd: .value("End", viewModel.heartRateHistory.last?.time ?? Date()),
+                            yStart: .value("Low", redZone),
+                            yEnd: .value("High", 220) // верхний предел
+                        )
+                        .foregroundStyle(Color.red.opacity(0.2))
                     }
                     
                     // 👇 Подсветка выбранной точки
@@ -298,6 +436,7 @@ struct ContentView: View {
                         }
                     }
                 }
+                .chartYScale(domain: 0...(redZone + 40))
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 5)) { value in
                         if let date = value.as(Date.self) {
@@ -336,22 +475,38 @@ struct ContentView: View {
                     .foregroundColor(.gray)
             }
             
-            // Кнопки действий
+            let percents = viewModel.calculateZonePercents(
+                green: greenZone,
+                yellow: yellowZone,
+                red: redZone
+            )
+
             HStack {
-                Button("📤 Экспортировать в CSV") {
-                    if let url = viewModel.exportCSV() {
-                        exportURL = url
-                        showShareSheet = true
-                    }
+                VStack {
+                    Text("I")
+                        .foregroundColor(.green)
+                    Text(String(format: "%.1f %%", percents.green))
+                        .font(.headline)
                 }
-                .buttonStyle(.borderedProminent)
-                
-                Button("🗑 Обнулить график") {
-                    viewModel.clearHistory()
+                Spacer()
+                VStack {
+                    Text("II")
+                        .foregroundColor(.yellow)
+                    Text(String(format: "%.1f %%", percents.yellow))
+                        .font(.headline)
                 }
-                .buttonStyle(.bordered)
+                Spacer()
+                VStack {
+                    Text("III")
+                        .foregroundColor(.red)
+                    Text(String(format: "%.1f %%", percents.red))
+                        .font(.headline)
+                }
             }
-            .padding(.top, 10)
+            .padding(.horizontal)
+
+            
+
             
             Spacer()
         }
